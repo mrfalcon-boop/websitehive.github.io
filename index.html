@@ -2,14 +2,15 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>AI Builder ULTRA PRO</title>
+<title>AI Builder</title>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <style>
 body{font-family:Arial;background:#0b0f19;color:white;text-align:center}
-input,button,textarea,select{padding:12px;margin:8px;border-radius:8px;border:none}
+input,button,textarea{padding:12px;margin:8px;border-radius:8px;border:none}
 button{background:#4da3ff;color:white;cursor:pointer}
 .card{background:#12182a;padding:20px;margin:10px;border-radius:12px}
 </style>
@@ -28,143 +29,108 @@ button{background:#4da3ff;color:white;cursor:pointer}
 
 <div id="dash" style="display:none">
 
-<h2>🤖 AI Generator</h2>
-<input id="idea" placeholder="Business Idea">
-<select id="template">
-<option value="gym">Gym</option>
-<option value="restaurant">Restaurant</option>
-<option value="portfolio">Portfolio</option>
-</select>
-<textarea id="code" placeholder="Website Code"></textarea>
+<h2>AI Generator</h2>
+<input id="idea" placeholder="Website Idea">
+<textarea id="code" placeholder="Generated Code"></textarea>
 <button onclick="generateAI()">Generate</button>
 
-<h2>🎨 Builder</h2>
-<button onclick="addHero()">Hero</button>
-<button onclick="addGallery()">Gallery</button>
-<button onclick="addContact()">Contact</button>
-
-<h2>🌐 Domain</h2>
-<input id="domain" placeholder="yourdomain.com">
-<button onclick="saveDomain()">Connect Domain</button>
-
-<h2>🚀 Deploy</h2>
-<button onclick="deploySite()">Deploy Live</button>
-<button onclick="downloadSite()">Download</button>
-<button onclick="buyPlan()">Buy Pro</button>
+<h2>Payment</h2>
+<div id="paypal-button-container"></div>
 
 <h2>Your Sites</h2>
 <div id="mysites"></div>
 
-<h2>👑 Admin</h2>
-<div id="admin"></div>
-
 </div>
 
 <script>
-const firebaseConfig={apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",authDomain:"ai-builder-23c7e.firebaseapp.com",projectId:"ai-builder-23c7e"}
+const firebaseConfig={
+apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",
+authDomain:"ai-builder-23c7e.firebaseapp.com",
+projectId:"ai-builder-23c7e"
+}
+
 firebase.initializeApp(firebaseConfig)
+
 let auth=firebase.auth()
 let db=firebase.firestore()
 
-function signup(){auth.createUserWithEmailAndPassword(s_email.value,s_pass.value).then(()=>alert("Signup Done"))}
+function signup(){
+auth.createUserWithEmailAndPassword(
+s_email.value,
+s_pass.value
+).then(()=>alert("Signup Success"))
+}
 
-function login(){auth.signInWithEmailAndPassword(l_email.value,l_pass.value).then(()=>{dash.style.display="block";loadSites();loadAdmin()})}
+function login(){
+auth.signInWithEmailAndPassword(
+l_email.value,
+l_pass.value
+).then(()=>alert("Login Success"))
+}
+
+auth.onAuthStateChanged(function(user){
+if(user){
+dash.style.display="block"
+loadSites()
+}else{
+dash.style.display="none"
+}
+})
 
 async function generateAI(){
 let user=auth.currentUser
 let plan=await db.collection("plans").doc(user.uid).get()
-if(!plan.exists)return alert("Buy Plan First")
 
-let ideaText=idea.value
-let temp=template.value
+if(!plan.exists){
+alert("Buy Plan First")
+return
+}
 
-let html=`<html><head><title>${ideaText}</title></head><body><h1>${ideaText}</h1><p>${temp} template site</p><!-- PAYPAL PAYMENT -->
-<script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
-
-<div id="paypal-button-container"></div>
-
-<script>
-paypal.Buttons({
- createOrder: function(data, actions) {
-   return actions.order.create({
-     purchase_units: [{
-       amount: { value: '9.99' }
-     }]
-   });
- },
- onApprove: async function(data, actions) {
-   const details = await actions.order.capture();
-   let user = auth.currentUser;
-   if(!user) return alert("Login First");
-
-   await db.collection("plans").doc(user.uid).set({
-     pro:true,
-     paypal: details.id,
-     date: new Date()
-   });
-
-   alert("✅ PayPal Payment Success — Plan Activated");
- }
-}).render('#paypal-button-container');
-</script>
-auth.onAuthStateChanged(function(user){
- if(user){
-   document.getElementById("dash").style.display="block"
-   loadSites()
-   loadAdmin()
- }else{
-   document.getElementById("dash").style.display="none"
- }
-})
-</body></html>`
+let html=`<html><body><h1>${idea.value}</h1></body></html>`
 code.value=html
-}
 
-function addHero(){code.value+=`<section style='padding:60px;background:#eee'><h2>Hero</h2></section>`}
-function addGallery(){code.value+=`<section><h2>Gallery</h2></section>`}
-function addContact(){code.value+=`<section><h2>Contact</h2></section>`}
+await db.collection("sites").add({
+uid:user.uid,
+name:idea.value,
+date:new Date()
+})
 
-async function deploySite(){
-let user=auth.currentUser
-let html=code.value
-let dom=domain.value
-let doc=await db.collection("sites").add({uid:user.uid,html:html,domain:dom,date:new Date()})
-alert("Deployment Requested ID: "+doc.id)
 loadSites()
-}
-
-function downloadSite(){
-let blob=new Blob([code.value],{type:"text/html"})
-let a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download="site.html"
-a.click()
-}
-
-async function saveDomain(){
-let user=auth.currentUser
-await db.collection("domains").doc(user.uid).set({domain:domain.value})
-alert("Domain Saved (DNS connect later)")
 }
 
 function loadSites(){
 let user=auth.currentUser
 mysites.innerHTML=""
 db.collection("sites").where("uid","==",user.uid).get().then(s=>{
-s.forEach(d=>{mysites.innerHTML+=`<div class='card'>Site ${d.id}</div>`})})}
-
-function loadAdmin(){
-admin.innerHTML=""
-db.collection("sites").get().then(s=>{
-s.forEach(d=>{admin.innerHTML+=`<div class='card'>All Site ${d.id}</div>`})})}
-
-function buyPlan(){
-var opt={key:"YOUR_RAZORPAY_KEY",amount:"49900",currency:"INR",
-handler:async function(r){let u=auth.currentUser
-await db.collection("plans").doc(u.uid).set({pro:true})
-alert("Plan Active")}}
-new Razorpay(opt).open()
+s.forEach(d=>{
+mysites.innerHTML+=`<div class="card">${d.data().name}</div>`
+})
+})
 }
+</script>
+
+<script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
+
+<script>
+paypal.Buttons({
+createOrder:function(data,actions){
+return actions.order.create({
+purchase_units:[{amount:{value:'9.99'}}]
+})
+},
+onApprove:async function(data,actions){
+const details=await actions.order.capture()
+
+let user=auth.currentUser
+
+await db.collection("plans").doc(user.uid).set({
+pro:true,
+paypal:details.id
+})
+
+alert("Payment Success")
+}
+}).render('#paypal-button-container')
 </script>
 
 </body>
