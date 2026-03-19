@@ -45,9 +45,9 @@ textarea{height:150px}
 
 <script>
 const firebaseConfig={
-apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",
-authDomain:"ai-builder-23c7e.firebaseapp.com",
-projectId:"ai-builder-23c7e"
+  apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",
+  authDomain:"ai-builder-23c7e.firebaseapp.com",
+  projectId:"ai-builder-23c7e"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -56,69 +56,71 @@ let db=firebase.firestore();
 
 // SIGNUP
 function signup(){
- auth.createUserWithEmailAndPassword(s_email.value, s_pass.value)
- .then(()=>alert("Signup Success"))
- .catch(e=>alert(e.message))
+  auth.createUserWithEmailAndPassword(s_email.value, s_pass.value)
+  .then(()=>alert("Signup Success"))
+  .catch(e=>alert(e.message))
 }
 
 // LOGIN
 function login(){
- auth.signInWithEmailAndPassword(l_email.value, l_pass.value)
- .then(()=>alert("Login Success"))
- .catch(e=>alert(e.message))
+  auth.signInWithEmailAndPassword(l_email.value, l_pass.value)
+  .then(()=>alert("Login Success"))
+  .catch(e=>alert(e.message))
 }
 
 // AUTH LISTENER
 auth.onAuthStateChanged(function(user){
- if(user){
-   dash.style.display="block";
-   loadSites();
- }else{
-   dash.style.display="none";
- }
+  if(user){
+    dash.style.display="block";
+    loadSites();
+  } else {
+    dash.style.display="none";
+  }
 });
 
 // AI GENERATE
-async function generateAI(){
- let user = auth.currentUser;
- if(!user){
-   alert("Please login first");
-   return;
- }
+async function generateAI() {
+  let user = auth.currentUser;
 
- try{
-   // TEMP: allow generate without plan for testing
-   let plan = await db.collection("plans").doc(user.uid).get();
-   // comment out next 2 lines to allow generate without payment
-   // if(!plan.exists){
-   //   alert("Buy Plan First"); return;
-   // }
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
 
-   let html=`<html><body><h1>${idea.value}</h1><p>Generated website from AI Builder</p></body></html>`;
-   code.value = html;
+  try {
+    // Check if user has plan (optional: remove comment to lock)
+    let plan = await db.collection("plans").doc(user.uid).get();
+    // if(!plan.exists){ alert("Buy Plan First"); return; }
 
-   await db.collection("sites").add({
-     uid:user.uid,
-     name:idea.value,
-     date:new Date()
-   });
+    // Generate website HTML
+    let html = `<html><body><h1>${idea.value}</h1><p>Generated website from AI Builder</p></body></html>`;
+    code.value = html;
 
-   loadSites();
- }catch(e){
-   console.log(e);
-   alert("Error generating site");
- }
+    // Save site to Firestore securely
+    await db.collection("sites").add({
+      uid: user.uid,
+      name: idea.value,
+      date: new Date()
+    });
+
+    // Reload sites list
+    loadSites();
+
+  } catch(e){
+    console.log(e);
+    alert("Error generating site");
+  }
 }
 
 // LOAD SITES
 function loadSites(){
- let user=auth.currentUser;
- mysites.innerHTML="";
- db.collection("sites").where("uid","==",user.uid).get().then(s=>{
-   s.forEach(d=>{
-     mysites.innerHTML+=`<div class="card">${d.data().name}</div>`;
-   });
- });
+  let user = auth.currentUser;
+  mysites.innerHTML="";
+  db.collection("sites").where("uid","==",user.uid).get().then(s=>{
+    s.forEach(d=>{
+      mysites.innerHTML += `<div class="card">${d.data().name}</div>`;
+    });
+  });
 }
 </script>
 
@@ -126,16 +128,20 @@ function loadSites(){
 <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
 <script>
 paypal.Buttons({
- createOrder:function(data,actions){
-   return actions.order.create({purchase_units:[{amount:{value:'9.99'}}]});
- },
- onApprove:async function(data,actions){
-   const details=await actions.order.capture();
-   let user = auth.currentUser;
-   if(!user){ alert("Login First"); return; }
-   await db.collection("plans").doc(user.uid).set({pro:true,paypal:details.id,date:new Date()});
-   alert("Payment Success — Plan Activated");
- }
+  createOrder: function(data, actions){
+    return actions.order.create({purchase_units:[{amount:{value:'9.99'}}]});
+  },
+  onApprove: async function(data, actions){
+    const details = await actions.order.capture();
+    let user = auth.currentUser;
+    if(!user){ alert("Login First"); return; }
+    await db.collection("plans").doc(user.uid).set({
+      pro:true,
+      paypal: details.id,
+      date: new Date()
+    });
+    alert("Payment Success — Plan Activated");
+  }
 }).render('#paypal-button-container');
 </script>
 
