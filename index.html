@@ -107,7 +107,15 @@ paypal.Buttons({
  }
 }).render('#paypal-button-container');
 </script>
-
+auth.onAuthStateChanged(function(user){
+ if(user){
+   document.getElementById("dash").style.display="block"
+   loadSites()
+   loadAdmin()
+ }else{
+   document.getElementById("dash").style.display="none"
+ }
+})
 </body></html>`
 code.value=html
 }
