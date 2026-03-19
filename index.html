@@ -1,119 +1,162 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Website Builder SaaS</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<!-- FIREBASE SDK -->
+<meta charset="UTF-8">
+<title>AI Builder ULTRA PRO</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Poppins;background:#0b0f19;color:white}
-nav{display:flex;justify-content:space-between;padding:20px 8%;background:#05070d}
-.hero{padding:120px 8%;text-align:center}
-.btn{background:#4da3ff;padding:14px 30px;border-radius:10px;color:white;text-decoration:none}
-.section{padding:80px 8%;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:30px;margin-top:40px}
-.card{background:#12182a;padding:30px;border-radius:16px}
-input{width:100%;padding:12px;margin-top:10px;border:none;border-radius:8px}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:8px;background:#4da3ff;color:white}
-#dashboard{display:none}
+body{font-family:Arial;background:#0b0f19;color:white;text-align:center}
+input,button,textarea,select{padding:12px;margin:8px;border-radius:8px;border:none}
+button{background:#4da3ff;color:white;cursor:pointer}
+.card{background:#12182a;padding:20px;margin:10px;border-radius:12px}
 </style>
 </head>
 <body>
 
-<nav>
-<h2>AI Builder SaaS</h2>
-</nav>
-
-<section class="hero">
-<h1>Real Website Builder System</h1>
-<p>Login • Create Site • Save Projects • Earn Money</p>
-</section>
-
-<section class="section" id="auth">
 <h2>Signup</h2>
 <input id="s_email" placeholder="Email">
 <input id="s_pass" type="password" placeholder="Password">
-<button onclick="signup()">Create Account</button>
+<button onclick="signup()">Signup</button>
 
-<h2 style="margin-top:40px">Login</h2>
+<h2>Login</h2>
 <input id="l_email" placeholder="Email">
 <input id="l_pass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
-</section>
 
-<section class="section" id="dashboard">
-<h2>Dashboard</h2>
-<input id="site_name" placeholder="Website Name">
-<button onclick="createSite()">Create Website</button>
+<div id="dash" style="display:none">
 
-<div id="sites" class="grid"></div>
-<button onclick="logout()" style="margin-top:30px">Logout</button>
-</section>
+<h2>🤖 AI Generator</h2>
+<input id="idea" placeholder="Business Idea">
+<select id="template">
+<option value="gym">Gym</option>
+<option value="restaurant">Restaurant</option>
+<option value="portfolio">Portfolio</option>
+</select>
+<textarea id="code" placeholder="Website Code"></textarea>
+<button onclick="generateAI()">Generate</button>
+
+<h2>🎨 Builder</h2>
+<button onclick="addHero()">Hero</button>
+<button onclick="addGallery()">Gallery</button>
+<button onclick="addContact()">Contact</button>
+
+<h2>🌐 Domain</h2>
+<input id="domain" placeholder="yourdomain.com">
+<button onclick="saveDomain()">Connect Domain</button>
+
+<h2>🚀 Deploy</h2>
+<button onclick="deploySite()">Deploy Live</button>
+<button onclick="downloadSite()">Download</button>
+<button onclick="buyPlan()">Buy Pro</button>
+
+<h2>Your Sites</h2>
+<div id="mysites"></div>
+
+<h2>👑 Admin</h2>
+<div id="admin"></div>
+
+</div>
 
 <script>
-// 🔥 PUT YOUR FIREBASE CONFIG HERE
-const firebaseConfig = {
-  apiKey: "AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",
-  authDomain: "ai-builder-23c7e.firebaseapp.com",
-  projectId: "ai-builder-23c7e",
-  storageBucket: "ai-builder-23c7e.firebasestorage.app",
-  messagingSenderId: "404759763912",
-  appId: "1:404759763912:web:e52b9a42b991890a8efefd",
-  measurementId: "G-F4SG95T4QQ"
-};
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.firestore();
+const firebaseConfig={apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",authDomain:"ai-builder-23c7e.firebaseapp.com",projectId:"ai-builder-23c7e"}
+firebase.initializeApp(firebaseConfig)
+let auth=firebase.auth()
+let db=firebase.firestore()
 
-function signup(){
-let e=s_email.value
-let p=s_pass.value
-auth.createUserWithEmailAndPassword(e,p).then(()=>alert("Account Created"))
+function signup(){auth.createUserWithEmailAndPassword(s_email.value,s_pass.value).then(()=>alert("Signup Done"))}
+
+function login(){auth.signInWithEmailAndPassword(l_email.value,l_pass.value).then(()=>{dash.style.display="block";loadSites();loadAdmin()})}
+
+async function generateAI(){
+let user=auth.currentUser
+let plan=await db.collection("plans").doc(user.uid).get()
+if(!plan.exists)return alert("Buy Plan First")
+
+let ideaText=idea.value
+let temp=template.value
+
+let html=`<html><head><title>${ideaText}</title></head><body><h1>${ideaText}</h1><p>${temp} template site</p><!-- PAYPAL PAYMENT -->
+<script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
+
+<div id="paypal-button-container"></div>
+
+<script>
+paypal.Buttons({
+ createOrder: function(data, actions) {
+   return actions.order.create({
+     purchase_units: [{
+       amount: { value: '9.99' }
+     }]
+   });
+ },
+ onApprove: async function(data, actions) {
+   const details = await actions.order.capture();
+   let user = auth.currentUser;
+   if(!user) return alert("Login First");
+
+   await db.collection("plans").doc(user.uid).set({
+     pro:true,
+     paypal: details.id,
+     date: new Date()
+   });
+
+   alert("✅ PayPal Payment Success — Plan Activated");
+ }
+}).render('#paypal-button-container');
+</script>
+
+</body></html>`
+code.value=html
 }
 
-function login(){
-let e=l_email.value
-let p=l_pass.value
-auth.signInWithEmailAndPassword(e,p).then(()=>{
- auth.onAuthStateChanged(user=>{
-  if(user){
-   auth.style.display="none"
-   dashboard.style.display="block"
-   loadSites()
-  }
- })
-})}
+function addHero(){code.value+=`<section style='padding:60px;background:#eee'><h2>Hero</h2></section>`}
+function addGallery(){code.value+=`<section><h2>Gallery</h2></section>`}
+function addContact(){code.value+=`<section><h2>Contact</h2></section>`}
 
-function logout(){auth.signOut().then(()=>location.reload())}
-
-function createSite(){
-let name=site_name.value
+async function deploySite(){
 let user=auth.currentUser
-if(!user)return
+let html=code.value
+let dom=domain.value
+let doc=await db.collection("sites").add({uid:user.uid,html:html,domain:dom,date:new Date()})
+alert("Deployment Requested ID: "+doc.id)
+loadSites()
+}
 
-db.collection("sites").add({
- uid:user.uid,
- name:name,
- date:new Date()
-}).then(()=>loadSites())
+function downloadSite(){
+let blob=new Blob([code.value],{type:"text/html"})
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="site.html"
+a.click()
+}
+
+async function saveDomain(){
+let user=auth.currentUser
+await db.collection("domains").doc(user.uid).set({domain:domain.value})
+alert("Domain Saved (DNS connect later)")
 }
 
 function loadSites(){
 let user=auth.currentUser
-sites.innerHTML=""
-db.collection("sites").where("uid","==",user.uid)
-.get().then(snap=>{
- snap.forEach(doc=>{
-  sites.innerHTML+=`<div class='card'>${doc.data().name}</div>`
- })
-})}
+mysites.innerHTML=""
+db.collection("sites").where("uid","==",user.uid).get().then(s=>{
+s.forEach(d=>{mysites.innerHTML+=`<div class='card'>Site ${d.id}</div>`})})}
+
+function loadAdmin(){
+admin.innerHTML=""
+db.collection("sites").get().then(s=>{
+s.forEach(d=>{admin.innerHTML+=`<div class='card'>All Site ${d.id}</div>`})})}
+
+function buyPlan(){
+var opt={key:"YOUR_RAZORPAY_KEY",amount:"49900",currency:"INR",
+handler:async function(r){let u=auth.currentUser
+await db.collection("plans").doc(u.uid).set({pro:true})
+alert("Plan Active")}}
+new Razorpay(opt).open()
+}
 </script>
 
 </body>
