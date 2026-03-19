@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>AI Builder ULTRA PRO</title>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -44,6 +45,7 @@ textarea{height:150px}
 </div>
 
 <script>
+// Firebase config
 const firebaseConfig={
   apiKey:"AIzaSyBjRU4bUKE3pwyTjHJPltugZ-Zmrax16rI",
   authDomain:"ai-builder-23c7e.firebaseapp.com",
@@ -58,14 +60,14 @@ let db=firebase.firestore();
 function signup(){
   auth.createUserWithEmailAndPassword(s_email.value, s_pass.value)
   .then(()=>alert("Signup Success"))
-  .catch(e=>alert(e.message))
+  .catch(e=>alert(e.message));
 }
 
 // LOGIN
 function login(){
   auth.signInWithEmailAndPassword(l_email.value, l_pass.value)
   .then(()=>alert("Login Success"))
-  .catch(e=>alert(e.message))
+  .catch(e=>alert(e.message));
 }
 
 // AUTH LISTENER
@@ -78,37 +80,48 @@ auth.onAuthStateChanged(function(user){
   }
 });
 
-// AI GENERATE
+// FIXED AI GENERATE FUNCTION
 async function generateAI() {
   let user = auth.currentUser;
-
-  if (!user) {
+  if (!user){
     alert("Please login first");
     return;
   }
 
   try {
-    // Check if user has plan (optional: remove comment to lock)
-    let plan = await db.collection("plans").doc(user.uid).get();
-    // if(!plan.exists){ alert("Buy Plan First"); return; }
+    // Optional plan check
+    let planDoc = await db.collection("plans").doc(user.uid).get();
+    // Uncomment next 2 lines to require paid plan
+    // if (!planDoc.exists){
+    //   alert("Buy Plan First");
+    //   return;
+    // }
 
     // Generate website HTML
-    let html = `<html><body><h1>${idea.value}</h1><p>Generated website from AI Builder</p></body></html>`;
+    let html = `<html>
+      <head><title>${idea.value}</title></head>
+      <body>
+        <h1>${idea.value}</h1>
+        <p>Generated website from AI Builder</p>
+      </body>
+    </html>`;
+
+    // Display code
     code.value = html;
 
-    // Save site to Firestore securely
+    // Save site securely
     await db.collection("sites").add({
-      uid: user.uid,
+      uid: user.uid,      // must include uid for Firestore rules
       name: idea.value,
       date: new Date()
     });
 
-    // Reload sites list
+    // Reload sites
     loadSites();
 
   } catch(e){
-    console.log(e);
-    alert("Error generating site");
+    console.error("AI Generate Error:", e);
+    alert("Error generating site: " + e.message);
   }
 }
 
@@ -128,7 +141,7 @@ function loadSites(){
 <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
 <script>
 paypal.Buttons({
-  createOrder: function(data, actions){
+  createOrder:function(data, actions){
     return actions.order.create({purchase_units:[{amount:{value:'9.99'}}]});
   },
   onApprove: async function(data, actions){
